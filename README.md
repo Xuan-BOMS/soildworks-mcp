@@ -1,3 +1,9 @@
+<div align="right">
+
+[English](README.md) | [中文](README.zh-CN.md)
+
+</div>
+
 # soildworks-mcp
 
 `soildworks-mcp` is a Windows-first MCP server for SolidWorks. It exposes a local SolidWorks COM automation workflow to Codex or any other MCP client through a Python stdio server plus a C# bridge.
@@ -45,6 +51,7 @@ soildworks-mcp/
 |- examples/
 |  |- codex-config.toml
 |  |- install-deploy-prompt.md
+|  |- install-deploy-prompt.zh-CN.md
 |- scripts/
 |  |- bootstrap.ps1
 |  |- build_bridge.ps1
@@ -58,7 +65,8 @@ soildworks-mcp/
 |- server.py
 |- pyproject.toml
 |- requirements.txt
-`- README.md
+|- README.md
+`- README.zh-CN.md
 ```
 
 ## Requirements
@@ -75,6 +83,7 @@ soildworks-mcp/
 If you want Codex CLI, Claude Code CLI, or another MCP-capable coding CLI to deploy this repository for you, use this single prompt:
 
 - [examples/install-deploy-prompt.md](D:\task\soildworks-mcp\examples\install-deploy-prompt.md)
+- [中文版本 / Chinese version](D:\task\soildworks-mcp\examples\install-deploy-prompt.zh-CN.md)
 
 That prompt is written to:
 
