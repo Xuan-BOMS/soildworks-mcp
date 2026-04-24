@@ -1,7 +1,8 @@
 [mcp_servers.solidworks]
 type = "stdio"
-command = "C:/Python312/python.exe"
+command = "python"
 args = ["-m", "solidworks_mcp"]
 
 # If you prefer running from a repository path instead of the installed module:
-# args = ["D:/task/soildworks-mcp/server.py"]
+# command = "<path-to-python>"
+# args = ["<path-to-repo>/server.py"]

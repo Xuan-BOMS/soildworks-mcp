@@ -125,7 +125,7 @@ python -m pip install -r requirements.txt
 如果 SolidWorks 安装在其他位置：
 
 ```powershell
-.\scripts\build_bridge.ps1 -SolidWorksInstallDir "D:\Program Files\SOLIDWORKS Corp\SOLIDWORKS"
+.\scripts\build_bridge.ps1 -SolidWorksInstallDir "<SolidWorks 安装目录>"
 ```
 
 ### 4. 一步式 bootstrap
@@ -133,7 +133,7 @@ python -m pip install -r requirements.txt
 如果你想一次完成可编辑安装和 bridge 构建：
 
 ```powershell
-.\scripts\bootstrap.ps1 -Python "C:\Python312\python.exe" -SolidWorksInstallDir "D:\Program Files\SOLIDWORKS Corp\SOLIDWORKS"
+.\scripts\bootstrap.ps1 -Python "<Python 路径>" -SolidWorksInstallDir "<SolidWorks 安装目录>"
 ```
 
 ### 5. 启动 MCP server
@@ -157,7 +157,7 @@ python -m solidworks_mcp
 ```toml
 [mcp_servers.solidworks]
 type = "stdio"
-command = "C:/Python312/python.exe"
+command = "python"
 args = ["-m", "solidworks_mcp"]
 ```
 
@@ -166,8 +166,8 @@ args = ["-m", "solidworks_mcp"]
 ```toml
 [mcp_servers.solidworks]
 type = "stdio"
-command = "C:/Python312/python.exe"
-args = ["D:/task/soildworks-mcp/server.py"]
+command = "<Python 路径>"
+args = ["<仓库路径>/server.py"]
 ```
 
 具体配置文件路径取决于客户端本身，但这套 `stdio + command + args` 模式可以迁移到 Codex CLI、Claude Code CLI 以及其他支持 MCP 的工具中。

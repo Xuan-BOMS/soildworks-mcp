@@ -3,11 +3,11 @@
 这是一份可直接用于 Codex CLI、Claude Code CLI 或其他支持 MCP 的编码 CLI 的完整中文提示词。
 
 ```text
-任务：把 D:\task\soildworks-mcp 在这台 Windows 机器上部署并验证为一个真实可用的 SolidWorks MCP server。
+任务：把 GitHub 仓库 https://github.com/Xuan-BOMS/soildworks-mcp 在这台 Windows 机器上部署并验证为一个真实可用的 SolidWorks MCP server。
 
 在开始改动文件或执行安装命令之前，先用一条简短消息问我这三个部署选择：
-1. 这次要部署到哪里？
-   例如：继续使用 D:\task\soildworks-mcp、克隆到新的目录、或使用某个现有 checkout。
+1. 这次要使用哪个本地仓库路径或 checkout 来部署？
+   例如：把仓库克隆到新的目录、使用已有 checkout、或从当前工作副本部署。
 2. 这次要注册到哪个编码客户端里使用？
    例如：Codex CLI、Claude Code CLI，或其他支持 MCP 的客户端。
 3. 最终 MCP server 要使用哪个 Python 解释器或虚拟环境？

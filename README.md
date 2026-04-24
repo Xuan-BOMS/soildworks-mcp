@@ -82,8 +82,8 @@ soildworks-mcp/
 
 If you want Codex CLI, Claude Code CLI, or another MCP-capable coding CLI to deploy this repository for you, use this single prompt:
 
-- [examples/install-deploy-prompt.md](D:\task\soildworks-mcp\examples\install-deploy-prompt.md)
-- [中文版本 / Chinese version](D:\task\soildworks-mcp\examples\install-deploy-prompt.zh-CN.md)
+- [examples/install-deploy-prompt.md](examples/install-deploy-prompt.md)
+- [中文版本 / Chinese version](examples/install-deploy-prompt.zh-CN.md)
 
 That prompt is written to:
 
@@ -126,7 +126,7 @@ If SolidWorks is installed in a default location:
 If SolidWorks is installed elsewhere:
 
 ```powershell
-.\scripts\build_bridge.ps1 -SolidWorksInstallDir "D:\Program Files\SOLIDWORKS Corp\SOLIDWORKS"
+.\scripts\build_bridge.ps1 -SolidWorksInstallDir "<path-to-solidworks-install-dir>"
 ```
 
 ### 4. One-step bootstrap
@@ -134,7 +134,7 @@ If SolidWorks is installed elsewhere:
 If you want editable install plus bridge build in one step:
 
 ```powershell
-.\scripts\bootstrap.ps1 -Python "C:\Python312\python.exe" -SolidWorksInstallDir "D:\Program Files\SOLIDWORKS Corp\SOLIDWORKS"
+.\scripts\bootstrap.ps1 -Python "<path-to-python>" -SolidWorksInstallDir "<path-to-solidworks-install-dir>"
 ```
 
 ### 5. Start the MCP server
@@ -158,7 +158,7 @@ Example:
 ```toml
 [mcp_servers.solidworks]
 type = "stdio"
-command = "C:/Python312/python.exe"
+command = "python"
 args = ["-m", "solidworks_mcp"]
 ```
 
@@ -167,8 +167,8 @@ If you prefer a direct repository path instead of module execution:
 ```toml
 [mcp_servers.solidworks]
 type = "stdio"
-command = "C:/Python312/python.exe"
-args = ["D:/task/soildworks-mcp/server.py"]
+command = "<path-to-python>"
+args = ["<path-to-repo>/server.py"]
 ```
 
 The exact config file location depends on the client. The same stdio command and args can be adapted for Codex CLI, Claude Code CLI, and other MCP-capable tools.

@@ -3,11 +3,11 @@
 Use this single prompt with Codex CLI, Claude Code CLI, or any other MCP-capable coding CLI.
 
 ```text
-Task: deploy and verify D:\task\soildworks-mcp as a real SolidWorks MCP server on this Windows machine.
+Task: deploy and verify the GitHub repository https://github.com/Xuan-BOMS/soildworks-mcp as a real SolidWorks MCP server on this Windows machine.
 
 Before making changes or running install commands, ask me these deployment choices in one short message:
-1. Where should this be deployed from?
-   Examples: keep using D:\task\soildworks-mcp, clone to another path, or install from an existing checkout.
+1. Which local repository path or checkout should be used for deployment?
+   Examples: clone the repository to a new path, use an existing checkout, or deploy from the current working copy.
 2. Which coding client should be registered for MCP use?
    Examples: Codex CLI, Claude Code CLI, or another MCP-capable client.
 3. Which Python interpreter or virtual environment should be used for the final MCP server command?
