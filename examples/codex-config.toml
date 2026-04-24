@@ -1,0 +1,4 @@
+[mcp_servers.solidworks]
+type = "stdio"
+command = "C:/Python312/python.exe"
+args = ["D:/task/soildworks-mcp/server.py"]

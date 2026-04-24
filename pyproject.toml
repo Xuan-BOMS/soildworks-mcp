@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "solidworks-mcp"
+version = "0.1.0"
+description = "A Windows-first MCP server for SolidWorks, packaged for direct local build and Codex import."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [
+  { name = "Xuan_Boms" }
+]
+dependencies = [
+  "mcp>=1.26.0,<2.0.0",
+  "pywin32>=311"
+]
+
+[project.scripts]
+solidworks-mcp = "solidworks_mcp.server:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
