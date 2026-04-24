@@ -312,6 +312,18 @@ def _extract_triplet_mm(prompt: str) -> tuple[float, float, float] | None:
     return tuple(float(triplet_match.group(index)) for index in range(1, 4))
 
 
+def _extract_secondary_triplet_mm(prompt: str, keywords: list[str]) -> tuple[float, float, float] | None:
+    lowered = prompt.lower()
+    for keyword in keywords:
+        start = lowered.find(keyword.lower())
+        if start < 0:
+            continue
+        triplet = _extract_triplet_mm(prompt[start:])
+        if triplet is not None:
+            return triplet
+    return None
+
+
 def _extract_value_with_unit(prompt: str, patterns: list[str], default_unit: str = "mm") -> float | None:
     for pattern in patterns:
         match = re.search(pattern, prompt, re.IGNORECASE)
@@ -763,6 +775,48 @@ def extrude_boss(depth: float) -> dict[str, Any]:
 
 
 @mcp.tool()
+def extrude_cut(depth: float, through_all: bool = True) -> dict[str, Any]:
+    """Extrude the latest sketch as a cut feature."""
+    return _run_bridge("extrude_cut", {"depth": depth, "throughAll": through_all})
+
+
+@mcp.tool()
+def inspect_active_part() -> dict[str, Any]:
+    """Inspect the active part and return feature and body summaries."""
+    return _run_bridge("inspect_active_part", {})
+
+
+@mcp.tool()
+def apply_fillet_to_feature_edges(feature_name: str, radius: float) -> dict[str, Any]:
+    """Apply a constant-radius fillet to the edges owned by a named feature."""
+    return _run_bridge(
+        "apply_fillet_to_feature_edges",
+        {
+            "featureName": feature_name,
+            "radius": radius,
+        },
+    )
+
+
+@mcp.tool()
+def apply_chamfer_to_feature_edges(feature_name: str, distance: float) -> dict[str, Any]:
+    """Apply an equal-distance chamfer to the edges owned by a named feature."""
+    return _run_bridge(
+        "apply_chamfer_to_feature_edges",
+        {
+            "featureName": feature_name,
+            "distance": distance,
+        },
+    )
+
+
+@mcp.tool()
+def combine_all_bodies() -> dict[str, Any]:
+    """Combine all solid bodies in the active part with an add/union operation."""
+    return _run_bridge("combine_all_bodies", {})
+
+
+@mcp.tool()
 def run_macro(
     macro_path: str,
     module_name: str = "",
@@ -831,7 +885,7 @@ def create_plate_with_holes(
     plane: str = "front",
     template_path: str | None = None,
 ) -> dict[str, Any]:
-    """Create a rectangular plate with an array of through holes in one sketch."""
+    """Create a rectangular plate with an array of through holes."""
     if rows <= 0 or columns <= 0:
         return {"ok": False, "reason": "invalid_hole_grid", "rows": rows, "columns": columns}
 
@@ -859,6 +913,34 @@ def create_plate_with_holes(
     if not steps["create_center_rectangle"].get("ok"):
         return _composite_result(steps, holeCount=0)
 
+    steps["extrude_boss"] = extrude_boss(depth=_mm_to_m(thickness_mm))
+    if not steps["extrude_boss"].get("ok"):
+        steps["active_document"] = active_document()
+        return _composite_result(
+            steps,
+            holeCount=0,
+            widthMm=width_mm,
+            heightMm=height_mm,
+            thicknessMm=thickness_mm,
+            holeDiameterMm=hole_diameter_mm,
+            rows=rows,
+            columns=columns,
+        )
+
+    steps["create_hole_sketch"] = create_sketch_on_plane(plane=plane)
+    if not steps["create_hole_sketch"].get("ok"):
+        steps["active_document"] = active_document()
+        return _composite_result(
+            steps,
+            holeCount=0,
+            widthMm=width_mm,
+            heightMm=height_mm,
+            thicknessMm=thickness_mm,
+            holeDiameterMm=hole_diameter_mm,
+            rows=rows,
+            columns=columns,
+        )
+
     hole_results: list[dict[str, Any]] = []
     radius_m = _mm_to_m(hole_diameter_mm / 2.0)
     for y_mm in y_positions_mm:
@@ -874,7 +956,7 @@ def create_plate_with_holes(
                 return _composite_result(steps, holeCount=len(hole_results))
 
     steps["create_circles"] = hole_results
-    steps["extrude_boss"] = extrude_boss(depth=_mm_to_m(thickness_mm))
+    steps["extrude_cut"] = extrude_cut(depth=_mm_to_m(thickness_mm * 2.0), through_all=True)
     steps["active_document"] = active_document()
     return _composite_result(
         steps,
@@ -889,6 +971,186 @@ def create_plate_with_holes(
 
 
 @mcp.tool()
+def create_feature_showcase_part(
+    base_width_mm: float = 120.0,
+    base_height_mm: float = 80.0,
+    base_thickness_mm: float = 12.0,
+    hole_diameter_mm: float = 6.0,
+    hole_offset_mm: float = 15.0,
+    rows: int = 2,
+    columns: int = 2,
+    boss_width_mm: float = 50.0,
+    boss_height_mm: float = 30.0,
+    boss_thickness_mm: float = 8.0,
+    boss_offset_x_mm: float = 18.0,
+    boss_offset_y_mm: float = 0.0,
+    fillet_radius_mm: float = 3.0,
+    chamfer_distance_mm: float = 2.0,
+    plane: str = "front",
+    template_path: str | None = None,
+) -> dict[str, Any]:
+    """Create a showcase part that exercises boss, cut, fillet, chamfer, and combine workflows."""
+    steps: dict[str, Any] = {}
+
+    steps["new_part"] = new_part(template_path=template_path)
+    if not steps["new_part"].get("ok"):
+        return _composite_result(steps)
+
+    steps["create_base_sketch"] = create_sketch_on_plane(plane=plane)
+    if not steps["create_base_sketch"].get("ok"):
+        return _composite_result(steps)
+
+    steps["create_base_rectangle"] = create_center_rectangle(
+        center_x=0.0,
+        center_y=0.0,
+        corner_x=_mm_to_m(base_width_mm / 2.0),
+        corner_y=_mm_to_m(base_height_mm / 2.0),
+    )
+    if not steps["create_base_rectangle"].get("ok"):
+        return _composite_result(steps)
+
+    steps["create_base_boss"] = _run_bridge(
+        "extrude_boss",
+        {
+            "depth": _mm_to_m(base_thickness_mm),
+            "mergeResult": True,
+        },
+    )
+    if not steps["create_base_boss"].get("ok"):
+        steps["inspection"] = inspect_active_part()
+        return _composite_result(steps, inspection=steps["inspection"])
+
+    steps["create_hole_sketch"] = create_sketch_on_plane(plane=plane)
+    if not steps["create_hole_sketch"].get("ok"):
+        steps["inspection"] = inspect_active_part()
+        return _composite_result(steps, inspection=steps["inspection"])
+
+    try:
+        x_positions_mm = _axis_positions(columns, base_width_mm / 2.0, hole_offset_mm)
+        y_positions_mm = _axis_positions(rows, base_height_mm / 2.0, hole_offset_mm)
+    except ValueError as exc:
+        return {
+            "ok": False,
+            "reason": "invalid_showcase_hole_offsets",
+            "detail": str(exc),
+        }
+
+    hole_results: list[dict[str, Any]] = []
+    hole_radius_m = _mm_to_m(hole_diameter_mm / 2.0)
+    for y_mm in y_positions_mm:
+        for x_mm in x_positions_mm:
+            hole_results.append(
+                create_circle(
+                    center_x=_mm_to_m(x_mm),
+                    center_y=_mm_to_m(y_mm),
+                    radius=hole_radius_m,
+                )
+            )
+    steps["create_holes"] = hole_results
+    if not all(result.get("ok") for result in hole_results):
+        steps["inspection"] = inspect_active_part()
+        return _composite_result(steps, inspection=steps["inspection"])
+
+    steps["create_hole_cut"] = extrude_cut(depth=_mm_to_m(base_thickness_mm * 2.0), through_all=True)
+    if not steps["create_hole_cut"].get("ok"):
+        steps["inspection"] = inspect_active_part()
+        return _composite_result(steps, inspection=steps["inspection"])
+
+    steps["create_boss_sketch"] = create_sketch_on_plane(plane=plane)
+    if not steps["create_boss_sketch"].get("ok"):
+        steps["inspection"] = inspect_active_part()
+        return _composite_result(steps, inspection=steps["inspection"])
+
+    steps["create_secondary_boss_profile"] = create_center_rectangle(
+        center_x=_mm_to_m(boss_offset_x_mm),
+        center_y=_mm_to_m(boss_offset_y_mm),
+        corner_x=_mm_to_m(boss_offset_x_mm + boss_width_mm / 2.0),
+        corner_y=_mm_to_m(boss_offset_y_mm + boss_height_mm / 2.0),
+    )
+    if not steps["create_secondary_boss_profile"].get("ok"):
+        steps["inspection"] = inspect_active_part()
+        return _composite_result(steps, inspection=steps["inspection"])
+
+    steps["create_secondary_boss"] = _run_bridge(
+        "extrude_boss",
+        {
+            "depth": _mm_to_m(boss_thickness_mm),
+            "mergeResult": False,
+            "midPlane": False,
+        },
+    )
+    if not steps["create_secondary_boss"].get("ok"):
+        steps["inspection"] = inspect_active_part()
+        return _composite_result(steps, inspection=steps["inspection"])
+
+    steps["apply_fillet"] = apply_fillet_to_feature_edges(
+        feature_name="__last_extrusion__",
+        radius=_mm_to_m(fillet_radius_mm),
+    )
+    if not steps["apply_fillet"].get("ok"):
+        steps["inspection"] = inspect_active_part()
+        return _composite_result(steps, inspection=steps["inspection"])
+
+    steps["apply_chamfer"] = apply_chamfer_to_feature_edges(
+        feature_name="__first_extrusion__",
+        distance=_mm_to_m(chamfer_distance_mm),
+    )
+    if not steps["apply_chamfer"].get("ok"):
+        steps["inspection"] = inspect_active_part()
+        return _composite_result(steps, inspection=steps["inspection"])
+
+    steps["combine_all_bodies"] = combine_all_bodies()
+    steps["inspection"] = inspect_active_part()
+    inspection = steps["inspection"]
+    combine_result = steps["combine_all_bodies"]
+    core_step_names = [
+        "new_part",
+        "create_base_sketch",
+        "create_base_rectangle",
+        "create_base_boss",
+        "create_hole_sketch",
+        "create_hole_cut",
+        "create_boss_sketch",
+        "create_secondary_boss_profile",
+        "create_secondary_boss",
+        "apply_fillet",
+        "apply_chamfer",
+    ]
+    core_ok = all(steps[name].get("ok") for name in core_step_names) and all(
+        result.get("ok") for result in hole_results
+    )
+    combine_supported = bool(combine_result.get("ok"))
+    response = {
+        "ok": core_ok and bool(inspection.get("ok")),
+        "steps": steps,
+        "inspection": inspection,
+        "validation": {
+            "bossValidated": bool(steps["create_base_boss"].get("ok")) and bool(steps["create_secondary_boss"].get("ok")),
+            "cutValidated": bool(steps["create_hole_cut"].get("ok")),
+            "filletValidated": bool(steps["apply_fillet"].get("ok")),
+            "chamferValidated": bool(steps["apply_chamfer"].get("ok")),
+            "combineValidated": combine_supported,
+            "combineSupported": combine_supported,
+            "combineStatus": combine_result,
+        },
+        "holeCount": rows * columns,
+        "baseWidthMm": base_width_mm,
+        "baseHeightMm": base_height_mm,
+        "baseThicknessMm": base_thickness_mm,
+        "bossWidthMm": boss_width_mm,
+        "bossHeightMm": boss_height_mm,
+        "bossThicknessMm": boss_thickness_mm,
+        "filletRadiusMm": fillet_radius_mm,
+        "chamferDistanceMm": chamfer_distance_mm,
+    }
+    if not combine_supported:
+        response["warnings"] = [
+            "combine_all_bodies could not be completed through the current SolidWorks COM host on this machine"
+        ]
+    return response
+
+
+@mcp.tool()
 def design_from_prompt(prompt: str) -> dict[str, Any]:
     """Interpret a narrow natural-language part request and dispatch to a stable high-level tool."""
     normalized = prompt.strip()
@@ -896,10 +1158,98 @@ def design_from_prompt(prompt: str) -> dict[str, Any]:
         return {"ok": False, "reason": "empty_prompt"}
 
     triplet = _extract_triplet_mm(normalized)
+    showcase_requested = _contains_any(
+        normalized,
+        ["showcase", "validation", "demo", "fillet", "chamfer", "combine", "boss", "raised"],
+    )
+    if triplet is None and showcase_requested:
+        triplet = (120.0, 80.0, 12.0)
     if triplet is None:
         return {"ok": False, "reason": "dimensions_not_found", "prompt": prompt}
 
     width_mm, height_mm, depth_or_thickness_mm = triplet
+    if showcase_requested:
+        boss_triplet = _extract_secondary_triplet_mm(normalized, ["boss", "pad", "raised"])
+        if boss_triplet is None:
+            boss_triplet = (50.0, 30.0, 8.0)
+
+        hole_diameter_mm = _extract_first_mm(
+            normalized,
+            [
+                r"(?:diameter|dia\.?|鐩村緞)\s*(\d+(?:\.\d+)?)\s*mm?",
+                r"m(\d+(?:\.\d+)?)",
+            ],
+        ) or 6.0
+        grid = _extract_grid(normalized) or (2, 2)
+        offset_mm = _extract_first_mm(
+            normalized,
+            [
+                r"(?:offset|edge offset|from the nearest .*? edges?|璺濊竟)\s*(\d+(?:\.\d+)?)\s*mm?",
+                r"(\d+(?:\.\d+)?)\s*mm?\s*(?:from the nearest .*? edges?|edge offset|璺濊竟)",
+            ],
+        ) or 15.0
+        boss_offset_x_mm = _extract_first_mm(
+            normalized,
+            [
+                r"offset\s*(\d+(?:\.\d+)?)\s*mm?\s*(?:on\s*x|x)",
+            ],
+        ) or 18.0
+        boss_offset_y_mm = _extract_first_mm(
+            normalized,
+            [
+                r"offset\s*(\d+(?:\.\d+)?)\s*mm?\s*(?:on\s*y|y)",
+            ],
+        ) or 0.0
+        fillet_radius_mm = _extract_first_mm(
+            normalized,
+            [
+                r"fillet\s*(\d+(?:\.\d+)?)\s*mm?",
+            ],
+        ) or 3.0
+        chamfer_distance_mm = _extract_first_mm(
+            normalized,
+            [
+                r"chamfer\s*(\d+(?:\.\d+)?)\s*mm?",
+            ],
+        ) or 2.0
+
+        result = create_feature_showcase_part(
+            base_width_mm=width_mm,
+            base_height_mm=height_mm,
+            base_thickness_mm=depth_or_thickness_mm,
+            hole_diameter_mm=hole_diameter_mm,
+            hole_offset_mm=offset_mm,
+            rows=grid[0],
+            columns=grid[1],
+            boss_width_mm=boss_triplet[0],
+            boss_height_mm=boss_triplet[1],
+            boss_thickness_mm=boss_triplet[2],
+            boss_offset_x_mm=boss_offset_x_mm,
+            boss_offset_y_mm=boss_offset_y_mm,
+            fillet_radius_mm=fillet_radius_mm,
+            chamfer_distance_mm=chamfer_distance_mm,
+        )
+        return {
+            "ok": result.get("ok", False),
+            "shape": "feature_showcase_part",
+            "parsed": {
+                "baseWidthMm": width_mm,
+                "baseHeightMm": height_mm,
+                "baseThicknessMm": depth_or_thickness_mm,
+                "holeDiameterMm": hole_diameter_mm,
+                "rows": grid[0],
+                "columns": grid[1],
+                "holeOffsetMm": offset_mm,
+                "bossWidthMm": boss_triplet[0],
+                "bossHeightMm": boss_triplet[1],
+                "bossThicknessMm": boss_triplet[2],
+                "bossOffsetXMm": boss_offset_x_mm,
+                "bossOffsetYMm": boss_offset_y_mm,
+                "filletRadiusMm": fillet_radius_mm,
+                "chamferDistanceMm": chamfer_distance_mm,
+            },
+            "result": result,
+        }
     has_holes = _contains_any(normalized, ["hole", "holes", "孔", "drill", "through hole"])
     if has_holes:
         hole_diameter_mm = _extract_first_mm(
@@ -968,6 +1318,7 @@ def design_from_prompt(prompt: str) -> dict[str, Any]:
         },
         "result": result,
     }
+
 
 def main() -> None:
     mcp.run()

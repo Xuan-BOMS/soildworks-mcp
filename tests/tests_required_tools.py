@@ -17,9 +17,15 @@ REQUIRED_TOOLS = [
     "create_circle",
     "add_dimension",
     "extrude_boss",
+    "extrude_cut",
+    "inspect_active_part",
+    "apply_fillet_to_feature_edges",
+    "apply_chamfer_to_feature_edges",
+    "combine_all_bodies",
     "run_macro",
     "create_rectangular_block",
     "create_plate_with_holes",
+    "create_feature_showcase_part",
     "design_from_prompt",
 ]
 
