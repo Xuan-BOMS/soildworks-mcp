@@ -153,38 +153,92 @@ args = ["D:/task/soildworks-mcp/server.py"]
 
 ## 提示词部署
 
-如果你想把这个仓库直接交给 Codex、ChatGPT Codex 或其他本地代码助手去自动部署，可以把下面这段提示词直接发给它：
+这一节适合直接复制给 Codex、ChatGPT Codex 或其他本地代码助手使用。
+
+写法参考了更偏“执行单 / 安装工单”风格的代理提示词：先冻结目标，再约束执行方式，最后规定验收输出。这样比“帮我装一下”更容易让代理稳定完成真实部署。
+
+### 标准部署提示词
 
 ```text
-请在当前 Windows 机器上部署 D:\task\soildworks-mcp 这个 SolidWorks MCP 仓库，并完成真实测试。
+任务：在当前 Windows 主机上部署并验证 `D:\task\soildworks-mcp`，把它配置成可被 Codex 以 MCP stdio 方式直接调用的 SolidWorks MCP server。
 
-要求：
-1. 使用仓库 README 中描述的标准方式部署，不要自行发明另一套目录结构。
-2. 安装 Python 依赖，确保 `python -m solidworks_mcp` 或 `python server.py` 可以启动。
-3. 构建 bridge\SolidWorksBridge.csproj；如果 SolidWorks 安装路径不是默认路径，请自动识别或在构建参数里传入 `SolidWorksInstallDir`。
-4. 在 Codex 配置中按 stdio MCP 方式接入这个 server。
-5. 做真实冒烟测试，至少验证：
-   - `launch_solidworks`
+目标：
+- 让仓库可以在本机直接构建、启动、接入 Codex。
+- 完成真实测试，不接受只给理论步骤。
+
+执行要求：
+1. 先阅读仓库 README，再按 README 中描述的标准方式部署。
+2. 不要另起炉灶，不要发明新的目录结构，不要绕过 bridge。
+3. 必须安装 Python 依赖，并确认以下任一启动方式可用：
+   - `python .\server.py`
+   - `python -m solidworks_mcp`
+4. 必须构建 `bridge\SolidWorksBridge.csproj`。
+   - 如果 SolidWorks 安装路径不是默认路径，自动识别或显式传入 `SolidWorksInstallDir`。
+5. 必须把这个 server 配到 Codex 的 `config.toml` 中，使用 `stdio` 方式调用。
+6. 必须做真实冒烟测试，至少验证：
+   - `ping`
    - `solidworks_status`
+   - `launch_solidworks`
    - `create_rectangular_block`
    - `save_active_document`
-6. 如果宿主机出现 SolidWorks 的 .NET Framework 弹窗，不要只汇报现象，要继续排查并尽量修到“可用”状态。
-7. 最终输出：
-   - 实际修改过的文件
-   - 部署命令
-   - 测试结果
-   - 如果还有限制，明确列出。
+7. 不要把“命令运行成功”当作“部署成功”。
+   - 必须验证生成文件真实存在。
+   - 必须验证已保存的 `.SLDPRT` 可以重新打开。
+8. 如果遇到 SolidWorks 的 `.NET Framework` / 宏 / 宿主稳定性弹窗，不要停在现象描述，要继续排查并尽量修到“可用状态”。
 
-补充约束：
-- 必须真的在本机执行命令和测试，不要只给理论步骤。
+禁止事项：
+- 不要只输出计划，不执行命令。
 - 不要跳过 bridge 构建。
-- 不要假设保存成功，必须验证生成文件存在且可重新打开。
+- 不要伪造测试结果。
+- 不要在未验证的情况下声称“已可用”。
+
+验收标准：
+- MCP server 可启动。
+- Codex 可通过 stdio 调用。
+- SolidWorks 可被拉起。
+- 至少成功创建一个实体零件。
+- 零件可保存到磁盘并重新打开。
+
+最终输出必须包含：
+- 实际执行过的命令
+- 修改过的文件
+- 测试结果
+- 生成文件路径
+- 仍然存在的限制或风险
 ```
 
-如果你希望助手直接生成一个“四孔支架并保存到桌面”，可以用更具体的版本：
+### 带建模任务的部署提示词
 
 ```text
-请部署并测试 D:\task\soildworks-mcp，然后通过 MCP 在 SolidWorks 中创建一个带 4 个 M3 孔的支架，长宽 20 cm，厚度 5 mm，孔距边 5 mm，并把生成的 SLDPRT 文件保存到桌面。完成后给出保存路径和测试结果。
+任务：部署并验证 `D:\task\soildworks-mcp`，然后用它在 SolidWorks 中真实生成一个零件。
+
+目标零件：
+- 带 4 个 M3 孔的支架
+- 长宽 20 cm
+- 厚度 5 mm
+- 孔距边 5 mm
+- 保存为 `.SLDPRT` 到桌面
+
+执行要求：
+1. 先完成仓库部署和 bridge 构建。
+2. 再把该 MCP server 以 stdio 方式接入 Codex。
+3. 使用真实 MCP 调用完成建模，不要只写示例代码。
+4. 保存后验证文件存在，并重新打开验证可读。
+
+最终输出必须包含：
+- 部署命令
+- 调用的 MCP 工具
+- 测试结果
+- 桌面上的实际保存路径
+- 如果 `M3` 只是按 `3 mm` 几何孔处理，也要明确说明
+```
+
+### 极简触发版
+
+如果你只是想快速丢给代理一句话，可以用这个版本：
+
+```text
+请按 D:\task\soildworks-mcp 的 README 在本机完成真实部署和测试，不要只给方案。部署后通过 MCP 在 SolidWorks 中创建一个带 4 个 M3 孔的支架，长宽 20 cm，厚度 5 mm，孔距边 5 mm，保存到桌面，并验证文件可重新打开。最后汇报命令、修改文件、测试结果和保存路径。
 ```
 
 ## 可选环境变量
