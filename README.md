@@ -70,6 +70,19 @@ soildworks-mcp/
 - access to `SolidWorks.Interop.sldworks.dll`
 - access to `SolidWorks.Interop.swconst.dll`
 
+## Quick Deploy
+
+If you want Codex CLI, Claude Code CLI, or another MCP-capable coding CLI to deploy this repository for you, use this single prompt:
+
+- [examples/install-deploy-prompt.md](D:\task\soildworks-mcp\examples\install-deploy-prompt.md)
+
+That prompt is written to:
+
+- work across MCP-capable coding CLIs instead of one specific client
+- ask the user where the deployment and MCP registration should go before making changes
+- perform a real install, real bridge build, real MCP registration, and real SolidWorks verification
+- report unsupported host behavior honestly instead of pretending deployment is complete
+
 ## Installation
 
 ### 1. Clone the repository
@@ -127,9 +140,9 @@ python .\server.py
 python -m solidworks_mcp
 ```
 
-## Codex MCP Registration
+## MCP Client Registration
 
-After installation, add a stdio server entry to your Codex config.
+After installation, register the server as a stdio MCP server in your coding client.
 
 Example:
 
@@ -148,6 +161,8 @@ type = "stdio"
 command = "C:/Python312/python.exe"
 args = ["D:/task/soildworks-mcp/server.py"]
 ```
+
+The exact config file location depends on the client. The same stdio command and args can be adapted for Codex CLI, Claude Code CLI, and other MCP-capable tools.
 
 ## Optional Environment Variables
 
@@ -215,22 +230,6 @@ Guarded or limited tools:
   Intentionally disabled because VSTA macro loading can crash SolidWorks on this host.
 - `add_dimension`
   Not enabled as a stable production path.
-
-## Installation Prompt
-
-If you want a coding agent to install and verify this repository end-to-end, use the ready-to-run prompt in:
-
-- [examples/install-deploy-prompt.md](D:\task\soildworks-mcp\examples\install-deploy-prompt.md)
-
-That prompt is written to force a real install, real bridge build, real MCP registration, and real SolidWorks verification instead of a plan-only answer.
-
-## Minimal Direct Prompt
-
-You can also use this shorter version:
-
-```text
-Deploy and verify D:\task\soildworks-mcp on this Windows machine. Do the real installation, build the bridge, register it as a stdio MCP server for Codex, and run real smoke tests. After deployment, use the MCP tools to create a SolidWorks part and report the commands run, files changed, test results, saved file path, and any remaining limitations.
-```
 
 ## Verified Behavior In This Codebase
 

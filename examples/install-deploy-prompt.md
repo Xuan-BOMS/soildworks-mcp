@@ -1,19 +1,28 @@
 # Install And Deploy Prompt
 
-Use this prompt as-is with Codex or another coding agent if you want real installation and verification rather than a plan-only answer.
+Use this single prompt with Codex CLI, Claude Code CLI, or any other MCP-capable coding CLI.
 
 ```text
-Task: deploy and verify D:\task\soildworks-mcp on this Windows machine as a real SolidWorks MCP server.
+Task: deploy and verify D:\task\soildworks-mcp as a real SolidWorks MCP server on this Windows machine.
+
+Before making changes or running install commands, ask me these deployment choices in one short message:
+1. Where should this be deployed from?
+   Examples: keep using D:\task\soildworks-mcp, clone to another path, or install from an existing checkout.
+2. Which coding client should be registered for MCP use?
+   Examples: Codex CLI, Claude Code CLI, or another MCP-capable client.
+3. Which Python interpreter or virtual environment should be used for the final MCP server command?
+
+After I answer, execute the deployment end to end.
 
 Execution requirements:
-1. Read D:\task\soildworks-mcp\README.md first, then follow that repository layout and deployment flow.
+1. Read the repository README first, then follow the repository layout instead of inventing a different structure.
 2. Perform the real installation, not just analysis.
 3. Install Python dependencies for the repository.
 4. Build bridge\SolidWorksBridge.csproj. If SolidWorks is not in a default location, detect it or pass SolidWorksInstallDir explicitly.
 5. Verify that at least one of these launch paths works:
    - python .\server.py
    - python -m solidworks_mcp
-6. Register the server for Codex as a stdio MCP server.
+6. Register the server as a stdio MCP server in the chosen coding client.
 7. Run real verification, not mock verification. At minimum validate:
    - ping
    - solidworks_status
@@ -32,6 +41,9 @@ Forbidden behavior:
 - do not fabricate test results
 
 Final output must include:
+- deployment path actually used
+- coding client actually registered
+- final stdio command configured for MCP
 - commands actually run
 - files changed
 - MCP tools actually called
